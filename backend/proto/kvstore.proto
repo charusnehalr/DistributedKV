@@ -1,0 +1,66 @@
+syntax = "proto3";
+
+package kvstore.v1;
+
+option go_package = "github.com/yourusername/kvstore/proto/pb;pb";
+
+// ConsistencyLevel controls how many replicas must acknowledge an operation.
+// In Phase 1 (single node) only ONE is used; QUORUM and ALL are reserved for Phase 2.
+enum ConsistencyLevel {
+  CONSISTENCY_LEVEL_UNSPECIFIED = 0;
+  ONE    = 1;
+  QUORUM = 2;
+  ALL    = 3;
+}
+
+// ---- Put ----
+message PutRequest {
+  string key              = 1;
+  bytes  value            = 2;
+  ConsistencyLevel consistency = 3;
+}
+
+message PutResponse {
+  int64  timestamp = 1;
+}
+
+// ---- Get ----
+message GetRequest {
+  string key              = 1;
+  ConsistencyLevel consistency = 2;
+}
+
+message GetResponse {
+  string key       = 1;
+  bytes  value     = 2;
+  int64  timestamp = 3;
+}
+
+// ---- Delete ----
+message DeleteRequest {
+  string key              = 1;
+  ConsistencyLevel consistency = 2;
+}
+
+message DeleteResponse {
+  bool success = 1;
+}
+
+// ---- Scan ----
+message ScanRequest {
+  string start_key = 1;
+  string end_key   = 2;
+  int32  limit     = 3;  // 0 means use server default (1000)
+}
+
+message ScanResponse {
+  repeated GetResponse entries = 1;
+}
+
+// KVStore is the main service exposed to clients.
+service KVStore {
+  rpc Put(PutRequest)       returns (PutResponse);
+  rpc Get(GetRequest)       returns (GetResponse);
+  rpc Delete(DeleteRequest) returns (DeleteResponse);
+  rpc Scan(ScanRequest)     returns (ScanResponse);
+}

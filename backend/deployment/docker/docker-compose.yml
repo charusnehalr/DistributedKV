@@ -1,0 +1,92 @@
+version: "3.9"
+
+# Three-node kvstore cluster for local testing.
+# Each node gets its own data volume and a fixed gossip port (7946).
+#
+# Usage:
+#   docker compose -f deployment/docker/docker-compose.yml up --build
+#
+# Test it:
+#   curl -X POST http://localhost:8080/api/v1/kv -H "Content-Type: application/json" \
+#        -d '{"key":"hello","value":"world"}'
+#   curl http://localhost:8081/api/v1/kv/hello   # should see the value via replication
+
+services:
+  node1:
+    build:
+      context: ../../          # backend/ is the build context
+      dockerfile: deployment/docker/backend.Dockerfile
+    environment:
+      KVS_NODE_ID:      "node-1"
+      KVS_LISTEN_HTTP:  ":8080"
+      KVS_LISTEN_GRPC:  ":50051"
+      KVS_DATA_DIR:     "/data"
+      KVS_GOSSIP_BIND:  "0.0.0.0:7946"
+      KVS_SEED_NODES:   ""          # first node has no seeds
+      KVS_REPLICATION_N: "3"
+      KVS_REPLICATION_R: "2"
+      KVS_REPLICATION_W: "2"
+    ports:
+      - "8080:8080"
+      - "50051:50051"
+    volumes:
+      - node1-data:/data
+    networks:
+      - kvnet
+
+  node2:
+    build:
+      context: ../../
+      dockerfile: deployment/docker/backend.Dockerfile
+    environment:
+      KVS_NODE_ID:      "node-2"
+      KVS_LISTEN_HTTP:  ":8081"
+      KVS_LISTEN_GRPC:  ":50052"
+      KVS_DATA_DIR:     "/data"
+      KVS_GOSSIP_BIND:  "0.0.0.0:7946"
+      KVS_SEED_NODES:   "node1:7946"
+      KVS_REPLICATION_N: "3"
+      KVS_REPLICATION_R: "2"
+      KVS_REPLICATION_W: "2"
+    ports:
+      - "8081:8081"
+      - "50052:50052"
+    volumes:
+      - node2-data:/data
+    networks:
+      - kvnet
+    depends_on:
+      - node1
+
+  node3:
+    build:
+      context: ../../
+      dockerfile: deployment/docker/backend.Dockerfile
+    environment:
+      KVS_NODE_ID:      "node-3"
+      KVS_LISTEN_HTTP:  ":8082"
+      KVS_LISTEN_GRPC:  ":50053"
+      KVS_DATA_DIR:     "/data"
+      KVS_GOSSIP_BIND:  "0.0.0.0:7946"
+      KVS_SEED_NODES:   "node1:7946"
+      KVS_REPLICATION_N: "3"
+      KVS_REPLICATION_R: "2"
+      KVS_REPLICATION_W: "2"
+    ports:
+      - "8082:8082"
+      - "50053:50053"
+    volumes:
+      - node3-data:/data
+    networks:
+      - kvnet
+    depends_on:
+      - node1
+
+volumes:
+  node1-data:
+  node2-data:
+  node3-data:
+
+networks:
+  kvnet:
+    driver: bridge
