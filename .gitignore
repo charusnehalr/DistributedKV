@@ -1,0 +1,45 @@
+# ── Go ────────────────────────────────────────────────────────────────────────
+/backend/bin/
+/backend/*.exe
+/backend/*.test
+/backend/*.out
+/backend/vendor/
+/backend/coverage.out
+/backend/coverage.html
+
+# Compiled proto stubs (regenerate with `make proto`)
+/backend/proto/*.pb.go
+
+# Data directories created at runtime
+/backend/data/
+/backend/data-*/
+*.snap
+*.snap.tmp
+wal.log
+wal-*.log
+
+# ── Node / React frontend ─────────────────────────────────────────────────────
+/frontend/node_modules/
+/frontend/dist/
+/frontend/.vite/
+/frontend/coverage/
+/frontend/*.local
+
+# ── Environment files ─────────────────────────────────────────────────────────
+.env
+.env.local
+.env.*.local
+# Keep examples
+!.env.example
+!/frontend/.env.example
+
+# ── Docker ────────────────────────────────────────────────────────────────────
+/deployment/data/
+
+# ── OS / Editor ───────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*.swo
