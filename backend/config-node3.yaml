@@ -1,0 +1,13 @@
+node_id: "node-3"
+listen_grpc: ":50053"
+listen_http: ":8082"
+data_dir: "./data-node3"
+gossip_bind: "127.0.0.1:7948"
+seed_nodes: "127.0.0.1:7946,127.0.0.1:7947,127.0.0.1:7948"
+replication_n: 3
+replication_r: 2
+replication_w: 2
+snapshot_interval: "1m"
+snapshot_threshold: 10000
+wal_max_size_bytes: 67108864
+log_level: "info"
