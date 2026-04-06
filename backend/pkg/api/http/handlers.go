@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/gorilla/mux"
+	"github.com/hashicorp/memberlist"
 	"github.com/yourusername/kvstore/pkg/consistency"
 	"github.com/yourusername/kvstore/pkg/metrics"
 	"github.com/yourusername/kvstore/pkg/replication"
@@ -15,6 +16,11 @@ import (
 	syncs "github.com/yourusername/kvstore/pkg/sync"
 	"go.uber.org/zap"
 )
+
+// ClusterMembers is implemented by cluster.Manager.
+type ClusterMembers interface {
+	Members() []*memberlist.Node
+}
 
 // APIResponse is the standard JSON envelope for all responses.
 type APIResponse struct {
@@ -39,6 +45,7 @@ type Handlers struct {
 	coordinator   *replication.Coordinator
 	sessions      *consistency.Manager
 	merkleBuilder func() *syncs.MerkleTree // nil if anti-entropy not configured
+	cluster       ClusterMembers
 	metrics       *metrics.Metrics
 	logger        *zap.Logger
 	startTime     time.Time
@@ -49,6 +56,7 @@ func NewHandlers(
 	coordinator *replication.Coordinator,
 	sessions *consistency.Manager,
 	merkleBuilder func() *syncs.MerkleTree,
+	cluster ClusterMembers,
 	m *metrics.Metrics,
 	nodeID string,
 	logger *zap.Logger,
@@ -57,6 +65,7 @@ func NewHandlers(
 		coordinator:   coordinator,
 		sessions:      sessions,
 		merkleBuilder: merkleBuilder,
+		cluster:       cluster,
 		metrics:       m,
 		nodeID:        nodeID,
 		logger:        logger,
@@ -205,10 +214,35 @@ func (h *Handlers) HandleScan(w http.ResponseWriter, r *http.Request) {
 
 // HandleHealth handles GET /api/v1/health
 func (h *Handlers) HandleHealth(w http.ResponseWriter, r *http.Request) {
+	type memberInfo struct {
+		ID      string `json:"id"`
+		Address string `json:"address"`
+		Status  string `json:"status"`
+	}
+
+	var members []memberInfo
+	if h.cluster != nil {
+		for _, n := range h.cluster.Members() {
+			status := "healthy"
+			if n.State != 0 { // memberlist.StateAlive == 0
+				status = "suspected"
+			}
+			members = append(members, memberInfo{
+				ID:      n.Name,
+				Address: n.Addr.String(),
+				Status:  status,
+			})
+		}
+	}
+	if members == nil {
+		members = []memberInfo{{ID: h.nodeID, Address: "localhost", Status: "healthy"}}
+	}
+
 	writeJSON(w, http.StatusOK, map[string]interface{}{
 		"status":         "ok",
 		"node_id":        h.nodeID,
 		"uptime_seconds": int(time.Since(h.startTime).Seconds()),
+		"members":        members,
 	})
 }
 

@@ -14,6 +14,11 @@ import (
 	"go.uber.org/zap"
 )
 
+// clusterProvider is satisfied by *cluster.Manager.
+type clusterProvider interface {
+	ClusterMembers
+}
+
 // Server wraps the standard library HTTP server.
 type Server struct {
 	httpServer *http.Server
@@ -27,11 +32,12 @@ func NewServer(
 	coordinator *replication.Coordinator,
 	sessions *consistency.Manager,
 	merkleBuilder func() *syncs.MerkleTree,
+	cluster clusterProvider,
 	m *metrics.Metrics,
 	nodeID string,
 	logger *zap.Logger,
 ) *Server {
-	h := NewHandlers(coordinator, sessions, merkleBuilder, m, nodeID, logger)
+	h := NewHandlers(coordinator, sessions, merkleBuilder, cluster, m, nodeID, logger)
 
 	r := mux.NewRouter()
 

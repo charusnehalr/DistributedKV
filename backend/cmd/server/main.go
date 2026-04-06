@@ -114,7 +114,7 @@ func main() {
 	}()
 
 	// HTTP server
-	httpSrv := httpapi.NewServer(cfg.ListenHTTP, coordinator, sessionMgr, merkleBuilder, m, cfg.NodeID, logger)
+	httpSrv := httpapi.NewServer(cfg.ListenHTTP, coordinator, sessionMgr, merkleBuilder, clusterMgr, m, cfg.NodeID, logger)
 	go func() {
 		if err := httpSrv.Start(); err != nil && err != http.ErrServerClosed {
 			logger.Error("HTTP server stopped", zap.Error(err))

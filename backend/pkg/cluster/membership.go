@@ -6,6 +6,7 @@ package cluster
 import (
 	"encoding/json"
 	"fmt"
+	"net"
 	"sync"
 	"time"
 
@@ -73,8 +74,22 @@ func NewManager(cfg Config, ring *hash.Ring, logger *zap.Logger) (*Manager, erro
 	mlCfg := memberlist.DefaultLocalConfig()
 	mlCfg.Name = cfg.NodeID
 	if cfg.BindAddr != "" {
-		mlCfg.BindAddr = cfg.BindAddr
-		mlCfg.AdvertiseAddr = cfg.BindAddr
+		host, portStr, err := net.SplitHostPort(cfg.BindAddr)
+		if err != nil {
+			return nil, fmt.Errorf("invalid gossip bind address %q: %w", cfg.BindAddr, err)
+		}
+		port, err := net.LookupPort("tcp", portStr)
+		if err != nil {
+			return nil, fmt.Errorf("invalid gossip port %q: %w", portStr, err)
+		}
+		mlCfg.BindAddr = host
+		mlCfg.BindPort = port
+		// Only set AdvertiseAddr when the bind address is a real IP
+		// (not 0.0.0.0); memberlist will auto-detect the best address otherwise.
+		if host != "" && host != "0.0.0.0" {
+			mlCfg.AdvertiseAddr = host
+			mlCfg.AdvertisePort = port
+		}
 	}
 	mlCfg.Events = &eventDelegate{mgr: m}
 	mlCfg.Delegate = &metaDelegate{meta: m.meta}
