@@ -1,0 +1,111 @@
+version: '3.9'
+
+networks:
+  kvnet:
+    driver: bridge
+
+volumes:
+  data-node1:
+  data-node2:
+  data-node3:
+
+services:
+  node1:
+    build:
+      context: ../../backend
+      dockerfile: ../deployment/docker/Dockerfile
+    container_name: kvstore-node1
+    hostname: node1
+    networks: [kvnet]
+    ports:
+      - "8080:8080"
+      - "50051:50051"
+    volumes:
+      - data-node1:/data
+    environment:
+      KVS_NODE_ID:          node1
+      KVS_LISTEN_HTTP:      ":8080"
+      KVS_LISTEN_GRPC:      ":50051"
+      KVS_DATA_DIR:         /data
+      KVS_GOSSIP_BIND:      "0.0.0.0:7946"
+      KVS_SEED_NODES:       "node1:7946,node2:7946,node3:7946"
+      KVS_REPLICATION_N:    "3"
+      KVS_REPLICATION_R:    "2"
+      KVS_REPLICATION_W:    "2"
+    restart: unless-stopped
+
+  node2:
+    build:
+      context: ../../backend
+      dockerfile: ../deployment/docker/Dockerfile
+    container_name: kvstore-node2
+    hostname: node2
+    networks: [kvnet]
+    ports:
+      - "8081:8080"
+      - "50052:50051"
+    volumes:
+      - data-node2:/data
+    environment:
+      KVS_NODE_ID:          node2
+      KVS_LISTEN_HTTP:      ":8080"
+      KVS_LISTEN_GRPC:      ":50051"
+      KVS_DATA_DIR:         /data
+      KVS_GOSSIP_BIND:      "0.0.0.0:7946"
+      KVS_SEED_NODES:       "node1:7946,node2:7946,node3:7946"
+      KVS_REPLICATION_N:    "3"
+      KVS_REPLICATION_R:    "2"
+      KVS_REPLICATION_W:    "2"
+    restart: unless-stopped
+
+  node3:
+    build:
+      context: ../../backend
+      dockerfile: ../deployment/docker/Dockerfile
+    container_name: kvstore-node3
+    hostname: node3
+    networks: [kvnet]
+    ports:
+      - "8082:8080"
+      - "50053:50051"
+    volumes:
+      - data-node3:/data
+    environment:
+      KVS_NODE_ID:          node3
+      KVS_LISTEN_HTTP:      ":8080"
+      KVS_LISTEN_GRPC:      ":50051"
+      KVS_DATA_DIR:         /data
+      KVS_GOSSIP_BIND:      "0.0.0.0:7946"
+      KVS_SEED_NODES:       "node1:7946,node2:7946,node3:7946"
+      KVS_REPLICATION_N:    "3"
+      KVS_REPLICATION_R:    "2"
+      KVS_REPLICATION_W:    "2"
+    restart: unless-stopped
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: kvstore-prometheus
+    networks: [kvnet]
+    ports:
+      - "9090:9090"
+    volumes:
+      - ../monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.retention.time=7d'
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: kvstore-grafana
+    networks: [kvnet]
+    ports:
+      - "3000:3000"
+    environment:
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_ANONYMOUS_ORG_ROLE: Admin
+      GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH: /var/lib/grafana/dashboards/kvstore.json
+    volumes:
+      - ../monitoring/grafana/dashboards:/var/lib/grafana/dashboards:ro
+    depends_on: [prometheus]
+    restart: unless-stopped

@@ -1,0 +1,52 @@
+{
+  "title": "DistributedKV",
+  "uid": "kvstore-main",
+  "schemaVersion": 38,
+  "refresh": "10s",
+  "panels": [
+    {
+      "id": 1, "type": "stat", "title": "Total Puts",
+      "gridPos": { "x": 0,  "y": 0, "w": 6, "h": 4 },
+      "targets": [{ "expr": "sum(kvstore_puts_total)", "legendFormat": "puts" }]
+    },
+    {
+      "id": 2, "type": "stat", "title": "Total Gets",
+      "gridPos": { "x": 6,  "y": 0, "w": 6, "h": 4 },
+      "targets": [{ "expr": "sum(kvstore_gets_total)", "legendFormat": "gets" }]
+    },
+    {
+      "id": 3, "type": "stat", "title": "Total Errors",
+      "gridPos": { "x": 12, "y": 0, "w": 6, "h": 4 },
+      "targets": [{ "expr": "sum(kvstore_errors_total)", "legendFormat": "errors" }]
+    },
+    {
+      "id": 4, "type": "stat", "title": "Memtable Size",
+      "gridPos": { "x": 18, "y": 0, "w": 6, "h": 4 },
+      "targets": [{ "expr": "kvstore_memtable_size_bytes", "legendFormat": "bytes" }]
+    },
+    {
+      "id": 5, "type": "timeseries", "title": "Operations / sec",
+      "gridPos": { "x": 0, "y": 4, "w": 24, "h": 8 },
+      "targets": [
+        { "expr": "rate(kvstore_puts_total[1m])",    "legendFormat": "puts/s"    },
+        { "expr": "rate(kvstore_gets_total[1m])",    "legendFormat": "gets/s"    },
+        { "expr": "rate(kvstore_deletes_total[1m])", "legendFormat": "deletes/s" }
+      ]
+    },
+    {
+      "id": 6, "type": "timeseries", "title": "Operation Latency (p99)",
+      "gridPos": { "x": 0, "y": 12, "w": 12, "h": 8 },
+      "targets": [
+        { "expr": "histogram_quantile(0.99, rate(kvstore_operation_duration_seconds_bucket[1m]))", "legendFormat": "p99 {{op}}" },
+        { "expr": "histogram_quantile(0.50, rate(kvstore_operation_duration_seconds_bucket[1m]))", "legendFormat": "p50 {{op}}" }
+      ]
+    },
+    {
+      "id": 7, "type": "timeseries", "title": "WAL Size",
+      "gridPos": { "x": 12, "y": 12, "w": 12, "h": 8 },
+      "targets": [
+        { "expr": "kvstore_wal_size_bytes", "legendFormat": "{{instance}}" }
+      ]
+    }
+  ]
+}
