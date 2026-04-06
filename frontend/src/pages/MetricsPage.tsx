@@ -119,6 +119,10 @@ export function MetricsPage() {
   )
 }
 
+function num(v: string | number | undefined): number {
+  return typeof v === 'number' ? v : 0
+}
+
 function formatBytes(b: number) {
   if (b < 1024)       return `${b} B`
   if (b < 1024 * 1024) return `${(b / 1024).toFixed(1)} KB`

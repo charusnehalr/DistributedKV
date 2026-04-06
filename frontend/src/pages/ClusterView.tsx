@@ -88,8 +88,13 @@ export function ClusterView() {
 
   const health = healthQuery.data as ClusterHealth | undefined
 
-  // Build a synthetic node list from the health response.
-  const nodes = health ? [{ id: health.node_id, address: 'localhost:8080', status: 'healthy', uptime: health.uptime_seconds }] : []
+  // Use the members list returned by the backend (includes all gossip-discovered nodes).
+  const nodes = health?.members?.map(m => ({
+    id: m.id,
+    address: m.address,
+    status: m.status as string,
+    uptime: m.id === health.node_id ? health.uptime_seconds : undefined,
+  })) ?? []
 
   return (
     <div className="space-y-6">

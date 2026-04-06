@@ -27,6 +27,7 @@ export interface ClusterHealth {
   status: string
   node_id: string
   uptime_seconds: number
+  members: ClusterNode[]
 }
 
 // ---- Metrics types ----
