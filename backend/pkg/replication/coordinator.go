@@ -72,7 +72,7 @@ func (c *Coordinator) Put(ctx context.Context, key string, value []byte, level C
 	if err != nil {
 		return err
 	}
-	w := c.quorumSize(level)
+	w := c.quorumSizeFor(level, len(replicas))
 
 	type result struct{ err error }
 	ch := make(chan result, len(replicas))
@@ -125,7 +125,7 @@ func (c *Coordinator) Get(ctx context.Context, key string, level ConsistencyLeve
 	if err != nil {
 		return nil, 0, err
 	}
-	r := c.quorumSize(level)
+	r := c.quorumSizeFor(level, len(replicas))
 
 	type result struct {
 		val *RemoteValue
@@ -205,7 +205,7 @@ func (c *Coordinator) Delete(ctx context.Context, key string, level ConsistencyL
 	if err != nil {
 		return err
 	}
-	w := c.quorumSize(level)
+	w := c.quorumSizeFor(level, len(replicas))
 
 	type result struct{ err error }
 	ch := make(chan result, len(replicas))
@@ -252,13 +252,24 @@ func (c *Coordinator) getReplicas(key string) ([]*hash.Node, error) {
 }
 
 func (c *Coordinator) quorumSize(level ConsistencyLevel) int {
+	return c.quorumSizeFor(level, c.ring.Size())
+}
+
+func (c *Coordinator) quorumSizeFor(level ConsistencyLevel, available int) int {
+	n := c.cfg.N
+	if available < n {
+		n = available
+	}
+	if n == 0 {
+		n = 1
+	}
 	switch level {
 	case One:
 		return 1
 	case All:
-		return c.cfg.N
+		return n
 	default: // Quorum
-		return (c.cfg.N / 2) + 1
+		return (n / 2) + 1
 	}
 }
 
